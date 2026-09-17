@@ -51,6 +51,29 @@ def cbm_spawn_command() -> list[str]:
 CBM_STARTUP_TIMEOUT = float(_safe_int("CBM_STARTUP_TIMEOUT", 60))
 CBM_CALL_TIMEOUT = float(_safe_int("CBM_CALL_TIMEOUT", 300))
 
+
+def cbm_binary_provisioned() -> bool:
+    """Whether an engine binary is already on disk, so spawning the child will
+    not trigger the ~269MB first-run download.
+
+    CBM_BINARY_PATH is consulted first because the Docker image pre-bakes the
+    engine outside the downloader's cache directory. Checking only that cache
+    path -- which is what callers used to do -- reports False for every
+    containerised install: the auto-index poller then stayed dormant until some
+    graph tool happened to start the engine, and the supervisor announced a
+    download that never happens. A configured-but-missing path stays False, so
+    this keeps agreeing with backend.verify_and_start().
+    """
+    if CBM_BINARY_PATH:
+        return os.path.exists(CBM_BINARY_PATH)
+    try:
+        from codebase_memory_mcp import _cli
+
+        return bool(_cli._bin_path(_cli._version()).exists())
+    except Exception:
+        return False
+
+
 # ── Response bounding ──────────────────────────────────────────────
 MAX_RESPONSE_BYTES = _safe_int("MARM_GRAPH_MAX_RESPONSE_BYTES", 900_000)
 

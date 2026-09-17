@@ -723,6 +723,27 @@ def test_the_poller_stays_dormant_when_the_engine_binary_is_absent(
     asyncio.run(worker._prime_engine())
 
 
+def test_a_prebaked_binary_counts_as_present_even_outside_the_download_cache(
+    shared_db, monkeypatch, tmp_path
+):
+    """The Docker image bakes the engine into /usr/local/bin and points
+    CBM_BINARY_PATH at it, so the downloader's cache path never exists there.
+    Consulting only that cache path reported False for every containerised
+    install, leaving the poller dormant at boot until some graph tool happened
+    to start the engine."""
+    from marm_graph.config import settings as graph_settings
+    from marm_mcp_server.core import graph_index_worker as module
+
+    baked = tmp_path / "codebase-memory-mcp-bin"
+    baked.write_bytes(b"")
+    monkeypatch.setattr(graph_settings, "CBM_BINARY_PATH", str(baked))
+
+    assert module.GraphIndexWorker.binary_present() is True
+
+    monkeypatch.setattr(graph_settings, "CBM_BINARY_PATH", str(tmp_path / "gone"))
+    assert module.GraphIndexWorker.binary_present() is False
+
+
 def test_a_tombstone_is_cleared_whichever_path_spelling_clears_it(shared_db):
     """The engine reports "C:/repo" while MARM validates to "C:\\repo". Keyed on
     the raw string, a manual index would never clear the delete's tombstone and

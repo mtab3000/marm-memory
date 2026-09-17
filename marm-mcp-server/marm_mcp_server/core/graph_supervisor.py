@@ -75,9 +75,7 @@ class GraphSupervisor:
         already routes to DEBUG — this is the user-visible signal instead.
         """
         try:
-            from codebase_memory_mcp import _cli
-
-            if not _cli._bin_path(_cli._version()).exists():
+            if not graph_settings.cbm_binary_provisioned():
                 logger.info("MARM: downloading graph engine (~269MB, one-time)...")
         except Exception:
             pass

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 import structlog
 
+from marm_graph.config import settings as graph_settings
 from marm_graph.core import tool_router as R
 from marm_graph.core.models import GraphIndexRequest
 
@@ -273,12 +274,7 @@ class GraphIndexWorker:
         never touch a graph tool. Same check graph_supervisor uses before it
         logs the one-time download notice.
         """
-        try:
-            from codebase_memory_mcp import _cli
-
-            return bool(_cli._bin_path(_cli._version()).exists())
-        except Exception:
-            return False
+        return graph_settings.cbm_binary_provisioned()
 
     def start(self) -> None:
         """Never raises. A worker that cannot run leaves graphs as stale as
